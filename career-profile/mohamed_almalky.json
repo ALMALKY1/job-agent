@@ -1,0 +1,158 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2026-08-08",
+  "immutable_master": true,
+  "candidate": {
+    "full_name": "Mohamed Almalky",
+    "title": "Embedded Software Engineer",
+    "years_of_experience": "5+",
+    "current_employer": "Valeo Egypt",
+    "industry": "Automotive / Embedded Systems",
+    "note": "Do NOT automatically describe as Senior. Evaluate actual responsibilities."
+  },
+  "skills": {
+    "programming_languages": {
+      "C": { "level": "EXPERIENCE", "years": "5+" },
+      "C++": { "level": "EXPERIENCE", "years": "3+" },
+      "Python": { "level": "EXPERIENCE", "years": "2+" },
+      "Shell_Scripting": { "level": "EXPERIENCE", "years": "2+" }
+    },
+    "autosar": {
+      "overview": {
+        "AUTOSAR_Classic": { "level": "EXPERIENCE" },
+        "AUTOSAR_Adaptive": { "level": "INTEREST" }
+      },
+      "communication_stack": {
+        "COM": { "level": "EXPERIENCE", "category": "Communication" },
+        "PduR": { "level": "EXPERIENCE", "category": "Communication" },
+        "CanIf": { "level": "EXPERIENCE", "category": "Communication" },
+        "CanSM": { "level": "EXPERIENCE", "category": "Communication" },
+        "ComM": { "level": "EXPERIENCE", "category": "Communication" },
+        "NM": { "level": "EXPERIENCE", "category": "Communication" },
+        "PNC": { "level": "EXPERIENCE", "category": "Communication" },
+        "CAN": { "level": "EXPERIENCE", "category": "Communication" }
+      },
+      "diagnostics_stack": {
+        "UDS": { "level": "EXPERIENCE", "category": "Diagnostics" },
+        "DCM": { "level": "EXPERIENCE", "category": "Diagnostics" },
+        "DEM": { "level": "EXPERIENCE", "category": "Diagnostics" },
+        "OBD": { "level": "EXPERIENCE", "category": "Diagnostics" }
+      },
+      "memory_stack": {
+        "NvM": { "level": "EXPERIENCE", "category": "Memory" },
+        "FEE": { "level": "EXPERIENCE", "category": "Memory" }
+      },
+      "system_services": {
+        "EcuM": { "level": "EXPERIENCE", "category": "System" },
+        "BswM": { "level": "EXPERIENCE", "category": "System" },
+        "RTE": { "level": "EXPERIENCE", "category": "System" }
+      },
+      "bsw_integration": {
+        "BSW_Configuration": { "level": "EXPERIENCE" },
+        "BSW_Integration": { "level": "EXPERIENCE" },
+        "ECU_Software_Integration": { "level": "EXPERIENCE" }
+      }
+    },
+    "automotive": {
+      "Bootloader": { "level": "EXPERIENCE" },
+      "RTOS": { "level": "EXPERIENCE" },
+      "Diagnostics": { "level": "EXPERIENCE" },
+      "CAN_Communication": { "level": "EXPERIENCE" },
+      "Production_Support": { "level": "EXPERIENCE" },
+      "Customer_Communication": { "level": "EXPERIENCE" },
+      "LIN": { "level": "LEARNING" },
+      "Ethernet": { "level": "INTEREST" },
+      "Functional_Safety_ISO26262": { "level": "INTEREST" },
+      "Cybersecurity_ISO21434": { "level": "INTEREST" }
+    },
+    "processes": {
+      "ASPICE": { "level": "EXPERIENCE" },
+      "V_Model": { "level": "EXPERIENCE" },
+      "Requirements_Engineering": { "level": "EXPERIENCE" },
+      "Agile_Scrum": { "level": "EXPERIENCE" }
+    },
+    "general_engineering": {
+      "Debugging": { "level": "EXPERIENCE" },
+      "Software_Integration": { "level": "EXPERIENCE" },
+      "Unit_Testing": { "level": "EXPERIENCE" },
+      "Code_Review": { "level": "EXPERIENCE" },
+      "Static_Analysis": { "level": "EXPERIENCE" }
+    }
+  },
+  "tools": {
+    "autosar_tools": {
+      "DaVinci_Developer": { "level": "EXPERIENCE", "vendor": "Vector" },
+      "DaVinci_Configurator": { "level": "EXPERIENCE", "vendor": "Vector" },
+      "Candela_Studio": { "level": "EXPERIENCE", "vendor": "Vector" }
+    },
+    "testing_tools": {
+      "CANoe": { "level": "EXPERIENCE", "vendor": "Vector" },
+      "VectorCAST": { "level": "EXPERIENCE", "vendor": "Vector" }
+    },
+    "static_analysis": {
+      "Klocwork": { "level": "EXPERIENCE" },
+      "Polyspace": { "level": "EXPERIENCE" }
+    },
+    "requirements_tools": {
+      "DOORS": { "level": "EXPERIENCE", "vendor": "IBM" },
+      "Reqtify": { "level": "EXPERIENCE", "vendor": "Dassault" }
+    },
+    "version_control": {
+      "Git": { "level": "EXPERIENCE" },
+      "SVN": { "level": "EXPERIENCE" }
+    },
+    "debugging": {
+      "winIDEA": { "level": "EXPERIENCE", "vendor": "iSystem" }
+    },
+    "platforms": {
+      "Renesas": { "level": "EXPERIENCE", "note": "Strong experience" }
+    }
+  },
+  "skill_relationships": {
+    "AUTOSAR_Communication_Stack": ["COM", "PduR", "CanIf", "CanSM", "ComM", "NM", "PNC"],
+    "Automotive_Diagnostics": ["UDS", "DCM", "DEM", "CAN", "OBD"],
+    "Memory_Stack": ["NvM", "FEE"],
+    "System_Management": ["EcuM", "BswM"],
+    "ECU_Integration": ["RTE", "BSW_Configuration", "BSW_Integration", "ECU_Software_Integration"]
+  },
+  "experience_levels": {
+    "EXPERIENCE": "Has professional, hands-on experience in production projects",
+    "INTEREST": "Actively interested and has theoretical knowledge, no professional project experience",
+    "LEARNING": "Currently studying or experimenting, limited exposure",
+    "NOT_EXPERIENCED": "No meaningful exposure"
+  },
+  "relocation": {
+    "willing_to_relocate": true,
+    "target_regions": ["Europe"],
+    "target_countries_preferred": ["Germany", "Netherlands", "Sweden", "Austria", "Denmark", "Norway", "Finland", "Switzerland"],
+    "target_countries_open": ["France", "Belgium", "Czech Republic", "Poland", "Italy", "Spain", "UK", "Ireland"],
+    "current_location": "Egypt",
+    "visa_sponsorship_required": true,
+    "visa_sponsorship_importance": "HIGH",
+    "relocation_support_preferred": true
+  },
+  "career_goals": {
+    "short_term": "Relocate to Europe in an Embedded Software Engineering role in the automotive or embedded industry",
+    "long_term": "Grow into a technical leadership or architecture role in AUTOSAR / embedded systems",
+    "interests": [
+      "AUTOSAR Adaptive",
+      "Functional Safety (ISO 26262)",
+      "Cybersecurity (ISO/SAE 21434)",
+      "Ethernet in automotive",
+      "Advanced driver assistance systems (ADAS)"
+    ]
+  },
+  "languages": {
+    "Arabic": "Native",
+    "English": "Professional working proficiency"
+  },
+  "application_defaults": {
+    "notice_period": "NEEDS_USER_INPUT",
+    "salary_expectation": "NEEDS_USER_INPUT",
+    "availability": "NEEDS_USER_INPUT",
+    "years_c_experience": "5+",
+    "years_autosar_experience": "5+",
+    "years_diagnostics_experience": "3+",
+    "willing_to_travel": true
+  }
+}

@@ -1,0 +1,65 @@
+# ===== Mohamed Job Agent =====
+
+# Environment and secrets
+.env
+.env.local
+.env.production
+
+# Generated application documents (all formats)
+generated/cv/*
+generated/motivation/*
+generated/applications/*
+!generated/cv/.gitkeep
+!generated/motivation/.gitkeep
+!generated/applications/.gitkeep
+
+# Database
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+
+# Logs (all formats)
+logs/*
+!logs/.gitkeep
+
+# n8n credentials (never commit)
+n8n/credentials/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+.venv/
+env/
+
+# Playwright
+browser-agent/playwright-report/
+browser-agent/test-results/
+browser-agent/screenshots/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker volumes (local)
+docker/volumes/
+
+# Node
+node_modules/
+
+# Temporary
+*.tmp
+*.bak

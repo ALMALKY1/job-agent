@@ -1,0 +1,56 @@
+# Mohamed Job Agent — Configuration
+# This file contains non-secret configuration values.
+
+[pipeline]
+# Scoring thresholds
+fit_threshold_shortlist = 80
+fit_threshold_review = 65
+
+# Gmail query
+gmail_query = "from:jobs-noreply@linkedin.com newer_than:1d"
+
+# Skip patterns (subjects to ignore)
+skip_patterns = [
+    "Your application",
+    "application was sent",
+    "apply now",
+    "Problem with your",
+    "You applied",
+    "Application received",
+    "Thank you for applying"
+]
+
+[openai]
+model = "gpt-4o"
+temperature = 0.3
+max_tokens = 2000
+
+[documents]
+# Output formats
+formats = ["txt", "docx"]
+# CV max pages
+cv_max_pages = 2
+# Filename template
+filename_template = "Mohamed_Almalky_{company}_{job_id}_{doc_type}"
+
+[schedule]
+# Cron expression: 8 AM daily
+cron = "0 8 * * *"
+timezone = "Africa/Cairo"
+
+[browser]
+headless = true
+slow_mo = 100
+timeout = 30000
+
+[ats_platforms]
+supported = [
+    "Workday",
+    "Greenhouse",
+    "Lever",
+    "SmartRecruiters",
+    "Teamtailor",
+    "SuccessFactors",
+    "Ashby",
+    "Personio"
+]

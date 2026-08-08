@@ -1,0 +1,66 @@
+[
+  {
+    "id": "email_001",
+    "subject": "3 new jobs match your alert for Embedded Software Engineer in Europe",
+    "from": "jobs-noreply@linkedin.com",
+    "date": "2026-08-07T10:00:00Z",
+    "html": "<html><body><table><tr><td><a href=\"https://www.linkedin.com/comm/jobs/view/3912345001/?trackingId=abc123\">Embedded Software Engineer - AUTOSAR</a></td></tr><tr><td>Continental AG · Frankfurt, Germany · Hybrid</td></tr><tr><td><a href=\"https://www.linkedin.com/comm/jobs/view/3912345002/?trackingId=def456\">Senior Embedded C Developer</a></td></tr><tr><td>Bosch · Stuttgart, Germany · On-site</td></tr><tr><td><a href=\"https://www.linkedin.com/comm/jobs/view/3912345003/?trackingId=ghi789\">AUTOSAR BSW Integration Engineer</a></td></tr><tr><td>Volvo Cars · Gothenburg, Sweden · Hybrid</td></tr></table></body></html>",
+    "text": ""
+  },
+  {
+    "id": "email_002",
+    "subject": "5 new jobs match your alert for AUTOSAR Developer",
+    "from": "jobs-noreply@linkedin.com",
+    "date": "2026-08-07T12:00:00Z",
+    "html": "<html><body><a href=\"https://www.linkedin.com/comm/jobs/view/3912345004/\">Embedded Software Developer</a><br>NXP Semiconductors · Eindhoven, Netherlands<br><a href=\"https://www.linkedin.com/comm/jobs/view/3912345005/\">ECU Software Engineer</a><br>ZF Group · Munich, Germany<br><a href=\"https://www.linkedin.com/comm/jobs/view/3912345001/\">Embedded Software Engineer - AUTOSAR</a><br>Continental AG · Frankfurt, Germany<br><a href=\"https://www.linkedin.com/comm/jobs/view/3912345006/\">Firmware Engineer</a><br>Infineon · Graz, Austria<br><a href=\"https://www.linkedin.com/comm/jobs/view/3912345007/\">Diagnostics Software Engineer</a><br>BMW · Munich, Germany</body></html>",
+    "text": ""
+  },
+  {
+    "id": "email_003_skip",
+    "subject": "Your application was sent to Continental AG",
+    "from": "jobs-noreply@linkedin.com",
+    "date": "2026-08-07T14:00:00Z",
+    "html": "<html><body>Your application for Embedded Software Engineer at Continental AG was successfully submitted.</body></html>",
+    "text": ""
+  },
+  {
+    "id": "email_004_malformed",
+    "subject": "New job matches your preferences",
+    "from": "jobs-noreply@linkedin.com",
+    "date": "2026-08-07T15:00:00Z",
+    "html": "<html><body><a href=\"https://www.linkedin.com/comm/jobs/view/\">Untitled Job</a><br><a href=\"https://www.linkedin.com/comm/jobs/view/3912345008/\">Valid Job With Missing Details</a></body></html>",
+    "text": ""
+  },
+  {
+    "id": "email_005_text_only",
+    "subject": "2 new jobs for Embedded Engineer",
+    "from": "jobs-noreply@linkedin.com",
+    "date": "2026-08-07T16:00:00Z",
+    "html": "",
+    "text": "New jobs matching your alert:\n\nSoftware Engineer - Embedded\nhttps://www.linkedin.com/jobs/view/3912345009/\nDelphi Technologies · Krakow, Poland\n\nAutomotive Software Developer\nhttps://www.linkedin.com/jobs/view/3912345010/\nAptiv · Wuppertal, Germany"
+  },
+  {
+    "id": "email_006_irrelevant",
+    "subject": "New jobs match your alert for Marketing Manager",
+    "from": "jobs-noreply@linkedin.com",
+    "date": "2026-08-07T17:00:00Z",
+    "html": "<html><body><a href=\"https://www.linkedin.com/comm/jobs/view/3912345011/\">Marketing Manager - B2B</a><br>SomeCompany · Berlin, Germany</body></html>",
+    "text": ""
+  },
+  {
+    "id": "email_007_no_location",
+    "subject": "1 new job match",
+    "from": "jobs-noreply@linkedin.com",
+    "date": "2026-08-07T18:00:00Z",
+    "html": "<html><body><a href=\"https://www.linkedin.com/comm/jobs/view/3912345012/\">Embedded Systems Architect</a></body></html>",
+    "text": ""
+  },
+  {
+    "id": "email_008_problem",
+    "subject": "Problem with your job alert",
+    "from": "jobs-noreply@linkedin.com",
+    "date": "2026-08-07T19:00:00Z",
+    "html": "<html><body>There was a problem with your job alert preferences.</body></html>",
+    "text": ""
+  }
+]

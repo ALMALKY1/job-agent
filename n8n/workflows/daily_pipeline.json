@@ -1,0 +1,276 @@
+{
+  "name": "Mohamed Job Agent - Daily Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Daily 8 AM Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": 50,
+        "filters": {
+          "q": "from:jobs-noreply@linkedin.com newer_than:1d -subject:\"Your application\" -subject:\"application was sent\" -subject:\"Problem with your\""
+        },
+        "options": {
+          "format": "resolved"
+        }
+      },
+      "id": "gmail-read",
+      "name": "Read LinkedIn Alert Emails",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [220, 0],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "PLACEHOLDER_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail OAuth2 — CONFIGURE ME"
+        }
+      },
+      "notes": "SETUP REQUIRED: Create Gmail OAuth2 credentials in n8n. Go to Settings > Credentials > Add Credential > Gmail OAuth2. Follow the Google Cloud Console OAuth setup."
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// LinkedIn Job Alert Email Parser\n// ============================================================\n// Extracts individual job listings from LinkedIn alert emails.\n// Returns one n8n item per job.\n// ============================================================\n\nconst results = [];\nconst seenIds = new Set();\n\nfor (const item of $input.all()) {\n  const emailId = item.json.id || '';\n  const subject = item.json.subject || '';\n  const html = item.json.html || item.json.textHtml || '';\n  const text = item.json.text || item.json.textPlain || '';\n  const from = item.json.from?.value?.[0]?.address || item.json.from || '';\n\n  // Skip non-alert emails\n  const subjectLower = subject.toLowerCase();\n  if (subjectLower.includes('your application') ||\n      subjectLower.includes('application was sent') ||\n      subjectLower.includes('problem with your')) {\n    continue;\n  }\n\n  // Extract LinkedIn job URLs\n  const urlRegex = /href=[\"']([^\"']*linkedin\\.com\\/(?:comm\\/)?jobs\\/view\\/(\\d+)[^\"']*)[\"']/gi;\n  const textUrlRegex = /(https?:\\/\\/(?:www\\.)?linkedin\\.com\\/(?:comm\\/)?jobs\\/view\\/(\\d+)[^\\s]*)/gi;\n\n  const content = html || text;\n  const regex = html ? urlRegex : textUrlRegex;\n  let match;\n\n  while ((match = regex.exec(content)) !== null) {\n    const fullUrl = match[1];\n    const jobId = match[2];\n\n    if (!jobId || seenIds.has(jobId)) continue;\n    seenIds.add(jobId);\n\n    // Try to find the job title (link text)\n    let title = 'Unknown Title';\n    if (html) {\n      const titleRegex = new RegExp(\n        `href=[\"'][^\"']*jobs/view/${jobId}[^\"']*[\"'][^>]*>([^<]+)<`,\n        'i'\n      );\n      const titleMatch = titleRegex.exec(html);\n      if (titleMatch) title = titleMatch[1].trim();\n    }\n\n    results.push({\n      json: {\n        linkedin_job_id: jobId,\n        job_title: title,\n        company: '',\n        location: '',\n        workplace_type: '',\n        linkedin_url: `https://www.linkedin.com/jobs/view/${jobId}/`,\n        source_email_id: emailId,\n        source_email_subject: subject,\n        discovered_at: new Date().toISOString()\n      }\n    });\n  }\n}\n\nif (results.length === 0) {\n  results.push({ json: { _no_jobs: true, message: 'No new jobs found in emails' } });\n}\n\nreturn results;"
+      },
+      "id": "parse-emails",
+      "name": "Parse LinkedIn Emails → Individual Jobs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "filter-no-jobs",
+              "leftValue": "={{ $json._no_jobs }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "notEqual"
+              }
+            }
+          ]
+        }
+      },
+      "id": "filter-empty",
+      "name": "Filter Empty Results",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [660, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// Deduplication Check via SQLite\n// ============================================================\n// In production, this checks the SQLite database.\n// For initial setup, it passes all jobs through.\n// The Python db_manager handles actual dedup.\n// ============================================================\n\nconst items = $input.all();\nconst newJobs = [];\n\nfor (const item of items) {\n  const jobId = item.json.linkedin_job_id;\n  // Mark as new — actual dedup happens in Python pipeline\n  item.json.is_new = true;\n  item.json.status = 'NEW';\n  newJobs.push(item);\n}\n\nreturn newJobs;"
+      },
+      "id": "dedup-check",
+      "name": "Deduplication Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o\",\n  \"temperature\": 0.3,\n  \"response_format\": { \"type\": \"json_object\" },\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are an expert technical recruiter specializing in embedded software and automotive engineering. Always respond with valid JSON.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Analyze this job for Mohamed Almalky (Embedded SW Engineer, 5+ yrs, AUTOSAR Classic, C/C++, Valeo Egypt, wants Europe relocation):\\n\\nTitle: {{ $json.job_title }}\\nCompany: {{ $json.company }}\\nLocation: {{ $json.location }}\\n\\nReturn JSON with: fit_score (0-100), technical_score, career_score, relocation_score, visa_score, decision (APPLY/REVIEW/SKIP), matched_skills[], missing_required_skills[], experience_match, visa_sponsorship (CONFIRMED/LIKELY/UNKNOWN/UNLIKELY/NO), relocation (CONFIRMED/LIKELY/UNKNOWN/NO), risk_flags[], explanation, recommended_cv_focus[], recommended_keywords[]\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "ai-analysis",
+      "name": "AI Job Analysis (OpenAI)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 0],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "PLACEHOLDER_OPENAI_CREDENTIAL_ID",
+          "name": "OpenAI API Key — CONFIGURE ME"
+        }
+      },
+      "notes": "SETUP REQUIRED: Create HTTP Header Auth credential. Header Name: Authorization, Header Value: Bearer sk-your-openai-key"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// Parse AI Analysis & Apply Thresholds\n// ============================================================\n\nconst items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  let analysis;\n  try {\n    const response = item.json.choices?.[0]?.message?.content || '{}';\n    analysis = JSON.parse(response);\n  } catch (e) {\n    analysis = { fit_score: 0, decision: 'SKIP', explanation: 'Failed to parse AI response' };\n  }\n\n  // Apply thresholds\n  const fitScore = analysis.fit_score || 0;\n  if (fitScore >= 80) analysis.decision = 'APPLY';\n  else if (fitScore >= 65) analysis.decision = 'REVIEW';\n  else analysis.decision = 'SKIP';\n\n  results.push({\n    json: {\n      ...item.json,\n      analysis: analysis,\n      fit_score: fitScore,\n      decision: analysis.decision\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "parse-analysis",
+      "name": "Parse Analysis & Apply Thresholds",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1320, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false
+          },
+          "combinator": "or",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "APPLY",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        }
+      },
+      "id": "filter-strong",
+      "name": "Filter Strong Matches",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [1540, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// Generate Daily Summary Report\n// ============================================================\n\nconst allItems = $('Parse Analysis & Apply Thresholds').all();\n\nconst summary = {\n  date: new Date().toISOString().split('T')[0],\n  total_processed: allItems.length,\n  apply: allItems.filter(i => i.json.decision === 'APPLY').length,\n  review: allItems.filter(i => i.json.decision === 'REVIEW').length,\n  skip: allItems.filter(i => i.json.decision === 'SKIP').length,\n  strong_matches: allItems\n    .filter(i => i.json.decision === 'APPLY')\n    .map(i => ({\n      title: i.json.job_title,\n      company: i.json.company,\n      location: i.json.location,\n      fit_score: i.json.fit_score,\n      url: i.json.linkedin_url\n    }))\n};\n\nreturn [{ json: summary }];"
+      },
+      "id": "daily-report",
+      "name": "Generate Daily Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1540, 220]
+    },
+    {
+      "parameters": {},
+      "id": "no-op-end",
+      "name": "Pipeline Complete",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1760, 0]
+    }
+  ],
+  "connections": {
+    "Daily 8 AM Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read LinkedIn Alert Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read LinkedIn Alert Emails": {
+      "main": [
+        [
+          {
+            "node": "Parse LinkedIn Emails → Individual Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse LinkedIn Emails → Individual Jobs": {
+      "main": [
+        [
+          {
+            "node": "Filter Empty Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Empty Results": {
+      "main": [
+        [
+          {
+            "node": "Deduplication Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deduplication Check": {
+      "main": [
+        [
+          {
+            "node": "AI Job Analysis (OpenAI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Job Analysis (OpenAI)": {
+      "main": [
+        [
+          {
+            "node": "Parse Analysis & Apply Thresholds",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Analysis & Apply Thresholds": {
+      "main": [
+        [
+          {
+            "node": "Filter Strong Matches",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generate Daily Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Strong Matches": {
+      "main": [
+        [
+          {
+            "node": "Pipeline Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Africa/Cairo"
+  },
+  "tags": [
+    {
+      "name": "job-agent",
+      "id": "1"
+    }
+  ]
+}
