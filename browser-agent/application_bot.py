@@ -215,7 +215,9 @@ class ApplicationBot:
         return False
 
     async def apply_to_job(self, job: dict, cv_path: str = None,
-                           motivation_path: str = None) -> dict:
+                           motivation_path: str = None,
+                           cv_pdf_path: str = None,
+                           motivation_pdf_path: str = None) -> dict:
         """
         Attempt to fill an application form.
         STOPS before final submission.
@@ -253,12 +255,13 @@ class ApplicationBot:
             result["screenshots"] = self.screenshots
             return result
 
-        # Try to upload CV
-        if cv_path and os.path.exists(cv_path):
+        # Try to upload CV (prefer PDF)
+        cv_upload_file = cv_pdf_path if (cv_pdf_path and os.path.exists(cv_pdf_path)) else cv_path
+        if cv_upload_file and os.path.exists(cv_upload_file):
             file_inputs = await self.page.query_selector_all("input[type='file']")
             for fi in file_inputs:
                 try:
-                    await fi.set_input_files(cv_path)
+                    await fi.set_input_files(cv_upload_file)
                     result["files_uploaded"].append("cv")
                     break
                 except Exception:

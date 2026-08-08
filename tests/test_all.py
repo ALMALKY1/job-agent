@@ -33,6 +33,16 @@ from ai_analyzer import (
     load_career_profile, build_analysis_prompt,
 )
 from job_retriever import detect_ats_platform, build_careers_search_query
+from doc_generator import (
+    generate_cv_docx, generate_motivation_docx, generate_cv_pdf,
+    generate_motivation_pdf, generate_all_documents,
+    sanitize_filename, generate_filename,
+)
+from pdf_converter import convert_docx_to_pdf, cleanup_docx
+from ats_validator import (
+    extract_text_from_pdf, validate_cv_pdf, validate_motivation_pdf,
+    _calculate_ats_score,
+)
 
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 
@@ -376,6 +386,141 @@ class TestDatabaseOperations(unittest.TestCase):
         row = self.conn.execute("SELECT fit_score, decision FROM jobs WHERE id = ?", (job_id,)).fetchone()
         self.assertEqual(row["fit_score"], 85)
         self.assertEqual(row["decision"], "APPLY")
+
+
+class TestATSDocumentPipeline(unittest.TestCase):
+    """Test ATS document generation, PDF conversion, and ATS validation."""
+
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+        self.sample_cv = """# Mohamed Almalky
+Mohamed Almalky
+Email: mohamed@almalky.dev | Cairo, Egypt
+
+## Professional Summary
+Embedded Software Engineer with 5+ years of experience in automotive ECU software.
+
+## Technical Skills
+- C, C++, Python
+- AUTOSAR Classic (COM, PduR, CanIf, UDS, DCM, DEM)
+- CAN, UDS
+
+## Professional Experience
+### Embedded Engineer — Valeo Egypt
+- Developed AUTOSAR BSW modules for European automotive OEMs.
+
+## Education
+- B.Sc. Electrical Engineering
+"""
+        self.sample_letter = """Mohamed Almalky
+Cairo, Egypt
+
+Dear Hiring Manager,
+
+I am writing to express my strong interest in the Embedded Software Engineer position at Continental AG.
+
+With over 5 years of experience developing AUTOSAR software and diagnostic stacks, I am excited about contributing to your team.
+
+Sincerely,
+Mohamed Almalky
+"""
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def test_filename_sanitization(self):
+        self.assertEqual(sanitize_filename("Continental AG / Germany"), "Continental_AG_Germany")
+        self.assertEqual(
+            generate_filename("Continental AG", "3912345678", "CV", "pdf"),
+            "Mohamed_Almalky_Continental_AG_3912345678_CV.pdf",
+        )
+
+    def test_docx_generation(self):
+        try:
+            docx_path = generate_cv_docx(self.sample_cv, "Continental", "12345")
+            self.assertTrue(os.path.exists(docx_path))
+            self.assertTrue(docx_path.endswith(".docx"))
+        except ImportError:
+            self.skipTest("python-docx not installed")
+
+    def test_pdf_conversion_and_text_extraction(self):
+        try:
+            docx_path = generate_cv_docx(self.sample_cv, "Continental", "12345")
+            pdf_path = convert_docx_to_pdf(docx_path, self.temp_dir)
+            self.assertIsNotNone(pdf_path)
+            self.assertTrue(os.path.exists(pdf_path))
+            self.assertTrue(pdf_path.endswith(".pdf"))
+
+            extracted_text = extract_text_from_pdf(pdf_path)
+            self.assertIsNotNone(extracted_text)
+            self.assertIn("Mohamed Almalky", extracted_text)
+            self.assertIn("AUTOSAR", extracted_text)
+        except (ImportError, RuntimeError) as e:
+            self.skipTest(f"PDF conversion unavailable: {e}")
+
+    def test_pdf_ats_validation_passed(self):
+        try:
+            docx_path = generate_cv_docx(self.sample_cv, "Continental", "12345")
+            pdf_path = convert_docx_to_pdf(docx_path, self.temp_dir)
+            validation = validate_cv_pdf(
+                pdf_path,
+                ats_keywords={"required": ["AUTOSAR", "C"], "preferred": ["Python"]},
+            )
+            self.assertTrue(validation["pdf_text_extract_success"])
+            self.assertTrue(validation["all_sections_found"])
+            self.assertTrue(validation["contact_info_readable"])
+            self.assertIn("AUTOSAR", validation["required_keywords_found"])
+            self.assertGreaterEqual(validation["ats_readability_score"], 70)
+            self.assertTrue(validation["validation_passed"])
+        except (ImportError, RuntimeError) as e:
+            self.skipTest(f"PDF validation unavailable: {e}")
+
+    def test_keyword_preservation(self):
+        try:
+            docx_path = generate_cv_docx(self.sample_cv, "Continental", "12345")
+            pdf_path = convert_docx_to_pdf(docx_path, self.temp_dir)
+            validation = validate_cv_pdf(
+                pdf_path,
+                ats_keywords={"required": ["AUTOSAR", "UDS", "CAN"], "preferred": ["Python"]},
+            )
+            self.assertIn("AUTOSAR", validation["required_keywords_found"])
+            self.assertIn("UDS", validation["required_keywords_found"])
+            self.assertIn("CAN", validation["required_keywords_found"])
+        except (ImportError, RuntimeError) as e:
+            self.skipTest(f"Keyword preservation test unavailable: {e}")
+
+    def test_failed_conversion_handling(self):
+        with self.assertRaises(FileNotFoundError):
+            convert_docx_to_pdf("/nonexistent/path/file.docx", self.temp_dir)
+
+    def test_failed_ats_validation_handling(self):
+        # Create an empty PDF or invalid file
+        fake_pdf = os.path.join(self.temp_dir, "bad.pdf")
+        with open(fake_pdf, "wb") as f:
+            f.write(b"%PDF-1.4 empty")
+
+        validation = validate_cv_pdf(fake_pdf)
+        self.assertFalse(validation["validation_passed"])
+        self.assertGreater(len(validation["errors"]), 0)
+
+    def test_temporary_docx_cleanup(self):
+        fake_docx = os.path.join(self.temp_dir, "test.docx")
+        with open(fake_docx, "w") as f:
+            f.write("test content")
+
+        cleanup_docx(fake_docx, keep_docx=False)
+        self.assertFalse(os.path.exists(fake_docx))
+
+        # Test keep_docx flag
+        fake_docx2 = os.path.join(self.temp_dir, "test2.docx")
+        with open(fake_docx2, "w") as f:
+            f.write("test content")
+        cleanup_docx(fake_docx2, keep_docx=True)
+        self.assertTrue(os.path.exists(fake_docx2))
+
+
+from tests.test_api import TestWorkerAPI
 
 
 if __name__ == "__main__":

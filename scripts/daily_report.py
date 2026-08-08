@@ -128,5 +128,28 @@ def generate_daily_report(report_date: str = None, db_path: str = None) -> str:
     return report_text
 
 
+def get_daily_summary(report_date: str = None, db_path: str = None) -> dict:
+    """Get structured daily summary metrics for API access."""
+    if report_date is None:
+        report_date = date.today().isoformat()
+
+    conn = get_connection(db_path)
+    try:
+        stats = get_jobs_for_report(conn, report_date)
+        return {
+            "report_date": report_date,
+            "total_jobs": stats.get("total_jobs", 0),
+            "jobs_analyzed": stats.get("jobs_analyzed", 0),
+            "jobs_skipped": stats.get("jobs_skipped", 0),
+            "strong_matches_count": len(stats.get("strong_matches", [])),
+            "review_count": len(stats.get("review_jobs", [])),
+            "jobs_documents_ready": stats.get("jobs_documents_ready", 0),
+            "jobs_ready_to_apply": stats.get("jobs_ready_to_apply", 0),
+        }
+    finally:
+        conn.close()
+
+
 if __name__ == "__main__":
     generate_daily_report()
+

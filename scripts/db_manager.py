@@ -210,21 +210,63 @@ def update_job_description(conn: sqlite3.Connection, job_id: int,
 
 
 def update_job_documents(conn: sqlite3.Connection, job_id: int,
-                         cv_file: str = None, motivation_file: str = None,
-                         application_answers: str = None) -> None:
-    """Store generated document paths."""
+                         cv_file: str = None, cv_pdf_file: str = None,
+                         motivation_file: str = None, motivation_pdf_file: str = None,
+                         application_answers: str = None, ats_score: float = None,
+                         ats_keywords_found: list | str = None,
+                         ats_keywords_missing: list | str = None,
+                         pdf_validation_status: str = None,
+                         ats_analysis: dict | str = None,
+                         status: str = None) -> None:
+    """
+    Store generated document paths and ATS validation metrics.
+    Only sets status = 'DOCUMENTS_READY' if pdf_validation_status == 'PASSED' or status is explicitly provided.
+    """
+    if isinstance(ats_keywords_found, list):
+        ats_keywords_found = json.dumps(ats_keywords_found)
+    if isinstance(ats_keywords_missing, list):
+        ats_keywords_missing = json.dumps(ats_keywords_missing)
+    if isinstance(ats_analysis, dict):
+        ats_analysis = json.dumps(ats_analysis)
+
+    if status is None:
+        if pdf_validation_status == "PASSED":
+            status = "DOCUMENTS_READY"
+        else:
+            status = "FAILED"
+
     conn.execute(
         """
         UPDATE jobs SET
             cv_file = COALESCE(?, cv_file),
+            cv_pdf_file = COALESCE(?, cv_pdf_file),
             motivation_file = COALESCE(?, motivation_file),
+            motivation_pdf_file = COALESCE(?, motivation_pdf_file),
             application_answers = COALESCE(?, application_answers),
-            status = 'DOCUMENTS_READY',
+            ats_score = COALESCE(?, ats_score),
+            ats_keywords_found = COALESCE(?, ats_keywords_found),
+            ats_keywords_missing = COALESCE(?, ats_keywords_missing),
+            pdf_validation_status = COALESCE(?, pdf_validation_status),
+            ats_analysis_json = COALESCE(?, ats_analysis_json),
+            status = ?,
             documents_generated_at = datetime('now'),
             updated_at = datetime('now')
         WHERE id = ?
         """,
-        (cv_file, motivation_file, application_answers, job_id),
+        (
+            cv_file,
+            cv_pdf_file,
+            motivation_file,
+            motivation_pdf_file,
+            application_answers,
+            ats_score,
+            ats_keywords_found,
+            ats_keywords_missing,
+            pdf_validation_status,
+            ats_analysis,
+            status,
+            job_id,
+        ),
     )
     conn.commit()
 
@@ -235,6 +277,12 @@ def get_jobs_by_status(conn: sqlite3.Connection, status: str) -> list[dict]:
         "SELECT * FROM jobs WHERE status = ? ORDER BY discovered_at DESC", (status,)
     ).fetchall()
     return [dict(row) for row in rows]
+
+
+def get_job_by_id(conn: sqlite3.Connection, job_id: int) -> dict | None:
+    """Get a single job by its database ID."""
+    row = conn.execute("SELECT * FROM jobs WHERE id = ?", (job_id,)).fetchone()
+    return dict(row) if row else None
 
 
 def get_jobs_for_report(conn: sqlite3.Connection, since_date: str = None) -> dict:

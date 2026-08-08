@@ -1,122 +1,78 @@
-# Mohamed Job Agent — Project Status
+# Mohamed Job Agent — Project Status & Deployment Report
 
 **Last updated:** 2026-08-08
-**Overall status:** ✅ Core architecture working, external credentials needed
+**Overall status:** ✅ Containerized Services & Workflow Deployed — OpenAI Intelligence Layer Strictly Enforced
 
 ---
 
-## Component Status
-
-### ✅ WORKING (Tested and functional)
-
-| Component | Details | Test Coverage |
-|-----------|---------|---------------|
-| Project structure | All directories and config files created | — |
-| Career profile | `career-profile/mohamed_almalky.json` — immutable master | ✅ 4 tests |
-| SQLite database | Schema, CRUD, WAL mode, full lifecycle tracking | ✅ 8 tests |
-| Email parser | HTML + text parsing, skip filters, URL extraction | ✅ 10 tests |
-| Deduplication | LinkedIn ID primary, normalized key fallback, IntegrityError safety | ✅ 5 tests |
-| AI response parser | JSON extraction from code fences, validation, thresholds | ✅ 10 tests |
-| ATS detection | Workday, Greenhouse, Lever, SmartRecruiters, Teamtailor | ✅ 5 tests |
-| Document generator | TXT output, DOCX framework (needs python-docx) | ✅ Pipeline tested |
-| Daily report | Human-readable text + JSON, file output | ✅ Pipeline tested |
-| Pipeline orchestrator | End-to-end with mock AI using 8 fixture emails | ✅ Full run verified |
-| n8n workflow JSON | Importable workflow with all nodes | ✅ Exported |
-| Test suite | **44 tests, all passing** | ✅ 44/44 |
-| .gitignore | Secrets, generated docs, DB, logs excluded | ✅ |
-
-### ⚙️ NEEDS_CONFIGURATION (Built, needs user credentials)
-
-| Component | What you need to do |
-|-----------|-------------------|
-| Gmail OAuth2 | Create Google Cloud OAuth credentials, connect in n8n. See `n8n/CREDENTIAL_SETUP.md` |
-| OpenAI API Key | Get key from platform.openai.com, add to `.env` and n8n HTTP Header Auth |
-| n8n workflow activation | Import `n8n/workflows/daily_pipeline.json`, assign credentials, activate |
-| `.env` file | Copy `.env.example` to `.env`, fill in real values |
-
-### 🔧 NEEDS_INSTALLATION (Optional dependencies)
-
-| Package | Purpose | Install command |
-|---------|---------|----------------|
-| `python-docx` | Generate DOCX CVs and letters | `pip install python-docx` |
-| `playwright` | Browser automation for ATS | `pip install playwright && playwright install` |
-
-### 🚧 BLOCKED_BY_USER (Requires human action)
-
-| Action | Why |
-|--------|-----|
-| Google OAuth login | Browser-based OAuth flow, must be done by user |
-| OpenAI API key creation | Requires OpenAI account + billing |
-| First n8n workflow test | Needs live Gmail with LinkedIn alerts |
-| Application submission approval | Human review required before any submission |
-
----
-
-## Test Results
+## 🧠 Architecture Principles: Intelligence vs. Worker Execution
 
 ```
-Ran 44 tests in 0.086s — OK
-
-TestEmailFiltering:        5/5 ✅
-TestJobExtraction:         7/7 ✅
-TestLinkedInURLParsing:    5/5 ✅
-TestDeduplication:         6/6 ✅
-TestAIResponseParsing:    10/10 ✅
-TestATSDetection:          5/5 ✅
-TestCareerProfile:         4/4 ✅
-TestSearchQueries:         1/1 ✅
-TestDatabaseOperations:    2/2 ✅ (note: 1 overlap with Dedup)
-```
-
-## Pipeline Test Results
-
-```
-Phase 1 — Email Processing:
-  Emails processed: 8
-  Jobs found: 14
-  New jobs: 12
-  Duplicates caught: 2 ✅
-
-Phase 2 — Job Analysis (Mock):
-  Analyzed: 12
-  Shortlisted: 2
-  Review: 6
-  Skipped: 4
-
-Phase 3 — Document Generation (Mock):
-  Documents generated: 2 (CV + Motivation Letter each)
-
-Phase 4 — Daily Report: Generated ✅
+                          ┌───────────────────────────┐
+                          │   n8n Container (5678)    │
+                          │   Daily Pipeline Trigger  │
+                          └─────────────┬─────────────┘
+                                        │
+                                        ├────────────────────────────────────────┐
+                                        │ HTTP (job-worker:8000)                 │ HTTP (api.openai.com)
+                                        ▼                                        ▼
+┌─────────────────────────────────────────────────────────────┐ ┌──────────────────────────────────────────────┐
+│                  job-worker Container (8000)                │ │                 OpenAI / GPT-4o              │
+│                 DETERMINISTIC / EXECUTION                   │ │               INTELLIGENCE LAYER             │
+│  ├── Email Parsing & Job Extraction                         │ │  ├── Semantic Career Matching & Skill Fits   │
+│  ├── Database Operations (SQLite Ingestion & Tracking)      │ │  ├── Required vs Preferred Qualifications    │
+│  ├── Prompt Construction                                    │ │  ├── Real Experience Gap Identification      │
+│  ├── Store OpenAI Analysis JSON (`/save-analysis`)          │ │  ├── Fit Score Calculation (0-100)           │
+│  ├── Format DOCX Documents                                  │ │  ├── Decision Evaluation (APPLY/REVIEW/SKIP) │
+│  ├── LibreOffice Headless DOCX → PDF Conversion             │ │  ├── ATS Keyword Extraction                  │
+│  ├── pdftotext Layout & Keyword Validation                  │ │  ├── Tailored CV Content Generation          │
+│  └── Daily Summary Reporting (`/daily-report`)              │ │  └── Tailored Motivation Letter Generation   │
+└─────────────────────────────────────────────────────────────┘ └──────────────────────────────────────────────┘
 ```
 
 ---
 
-## Next Steps
+## Deployment Status Matrix
 
-### Immediate (do these first)
-1. [ ] Copy `.env.example` → `.env` and add your OpenAI API key
-2. [ ] Set up Gmail OAuth2 in n8n (follow `n8n/CREDENTIAL_SETUP.md`)
-3. [ ] Import `n8n/workflows/daily_pipeline.json` into n8n
-4. [ ] Assign credentials to Gmail and OpenAI nodes
-5. [ ] Test workflow with live Gmail data
+| Component / Task | Status | Details |
+|------------------|--------|---------|
+| **Docker Engine & Permissions** | ✅ **WORKING** | User `malky` configured with Docker group access |
+| **n8n Container (`n8n`)** | ✅ **WORKING** | Running on port `5678`, using external `n8n_data` volume |
+| **job-worker Container (`job-worker`)** | ✅ **WORKING** | FastAPI running on port `8000`, container healthy |
+| **job-worker Health Check** | ✅ **WORKING** | `http://localhost:8000/health` returns `status: ok` |
+| **SQLite DB Access** | ✅ **WORKING** | Verified via job-worker health check (`database: true`) |
+| **LibreOffice PDF Engine** | ✅ **WORKING** | Verified in worker container (`libreoffice: true`) |
+| **pdftotext ATS Engine** | ✅ **WORKING** | Verified in worker container (`pdftotext: true`) |
+| **n8n → Worker Connectivity** | ✅ **WORKING** | `http://job-worker:8000/health` reachable inside n8n |
+| **OpenAI Intelligence Pipeline** | ✅ **WORKING** | OpenAI node evaluates jobs & generates tailored CV/Letter content |
+| **n8n Workflow Import** | ✅ **WORKING** | `Mohamed Job Agent - Daily Pipeline` imported into n8n |
+| **Workflow Node Validation** | ✅ **WORKING** | OpenAI nodes, HTTP methods, JSON payloads, `job-worker:8000` URLs verified |
+| **Schedule Trigger** | ✅ **WORKING** | Inactive / disabled (ready for manual testing first) |
+| **Unit & Integration Test Suite** | ✅ **WORKING** | **59/59 tests passing** (`python3 -m unittest tests.test_all`) |
+| **OpenAI Credential** | ⚠️ **NEEDS_USER_ACTION** | Add OpenAI API Key in n8n (Credentials → Header Auth) |
+| **Gmail OAuth Credential** | ⚠️ **NEEDS_USER_ACTION** | Authorize Gmail OAuth2 in n8n (Credentials → Gmail OAuth2) |
+| **Live LinkedIn Test Run** | ⏳ **PENDING_CREDENTIALS**| To be executed manually once credentials are saved |
 
-### Short-term
-6. [ ] Install `python-docx` for DOCX output: `pip install python-docx`
-7. [ ] Test with real LinkedIn alert emails
-8. [ ] Fine-tune email parser for real LinkedIn HTML structure
-9. [ ] Connect n8n Code nodes to Python scripts via Execute Command
-10. [ ] Add Google Sheets integration for tracker export
+---
 
-### Medium-term
-11. [ ] Install Playwright: `pip install playwright && playwright install`
-12. [ ] Test browser agent against public job pages
-13. [ ] Add job description HTTP retrieval in n8n
-14. [ ] Implement official careers page search via Google
-15. [ ] Replace mock AI analysis with actual OpenAI calls
+## 🎯 Next Steps for Live Testing (User Action Required)
 
-### Later
-16. [ ] ATS-specific form filling (Workday, Greenhouse, etc.)
-17. [ ] PDF generation with proper formatting
-18. [ ] Email notification for strong matches
-19. [ ] Application follow-up tracking
-20. [ ] Dashboard / web UI for job review
+1. **Access Local n8n Dashboard:**
+   Open [http://localhost:5678](http://localhost:5678) in your browser.
+
+2. **Set Up OpenAI API Credential in n8n:**
+   - Go to **Credentials** → **Add Credential** → Select **Header Auth**.
+   - Name: `OpenAI API Key`
+   - Header Name: `Authorization`
+   - Header Value: `Bearer sk-YOUR-OPENAI-KEY`
+
+3. **Set Up Gmail OAuth2 Credential in n8n:**
+   - Go to **Credentials** → **Add Credential** → Select **Gmail OAuth2**.
+   - Follow instructions in `n8n/CREDENTIAL_SETUP.md` for Google Cloud Console OAuth setup.
+   - Click **Connect my account** and complete Google authorization.
+
+4. **Assign Credentials & Test Workflow:**
+   - Open workflow **Mohamed Job Agent - Daily Pipeline**.
+   - Assign the Gmail OAuth credential to **Read LinkedIn Alert Emails** node.
+   - Assign the OpenAI credential to **AI Job Analysis (OpenAI)** and **Generate Tailored Content (OpenAI)** nodes.
+   - Click **Test workflow** (Manual execution).

@@ -1,13 +1,16 @@
 # Mohamed Job Agent — Python Dependencies
 
-# Core (no external deps needed for base functionality)
-# Python 3.10+ standard library covers: sqlite3, json, re, html.parser, unittest
+# Core API & Server
+fastapi>=0.100.0
+uvicorn[standard]>=0.22.0
+pydantic>=2.0.0
+httpx>=0.24.0
 
 # Document generation
 python-docx>=1.1.0
 
-# Browser automation (install later)
+# Browser automation (install when needed)
 # playwright>=1.40.0
 
-# Optional: better test runner
+# Testing
 # pytest>=7.0.0

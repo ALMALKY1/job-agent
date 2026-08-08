@@ -186,7 +186,7 @@ def generate_documents_mock(db_path: str = None) -> dict:
     In production, n8n handles OpenAI-based generation.
     """
     conn = get_connection(db_path)
-    stats = {"documents_generated": 0}
+    stats = {"documents_generated": 0, "failed": 0}
 
     try:
         shortlisted = get_jobs_by_status(conn, "SHORTLISTED")
@@ -195,54 +195,87 @@ def generate_documents_mock(db_path: str = None) -> dict:
         for job in shortlisted:
             analysis = json.loads(job.get("analysis_json", "{}"))
 
-            # Mock CV content
+            ats_keywords = {
+                "required": ["AUTOSAR", "Embedded C", "CAN", "UDS"],
+                "preferred": ["Vector DaVinci", "CANoe", "Python"],
+            }
+
+            # Mock ATS-optimized CV content
             cv_content = f"""# Mohamed Almalky
-## Embedded Software Engineer
+Mohamed Almalky
+Contact: mohamed@almalky.dev | Cairo, Egypt | Relocation Willing
 
-### Professional Summary
+## Professional Summary
 Embedded Software Engineer with 5+ years of automotive experience,
-specializing in AUTOSAR Classic BSW configuration and integration.
+specializing in AUTOSAR Classic BSW configuration, CAN communication stack, and UDS diagnostics.
 
-### Tailored for: {job.get('title')} at {job.get('company')}
+## Technical Skills
+- Programming: Embedded C, C++, Python
+- Automotive Standards: AUTOSAR Classic (COM, PduR, CanIf, CanSM, DCM, DEM), CAN, UDS
+- Tools: Vector DaVinci Configurator, DaVinci Developer, CANoe, Lauterbach TRACE32
 
-### Technical Skills
-- Embedded C, C++
-- AUTOSAR Classic: {', '.join(analysis.get('recommended_keywords', []))}
-- Tools: DaVinci Developer, DaVinci Configurator, CANoe
+## Professional Experience
+### Embedded Software Engineer — Valeo Egypt
+- Integrated and configured AUTOSAR BSW modules for European OEM projects
+- Developed diagnostic services using Unified Diagnostic Services (UDS) and Controller Area Network (CAN)
+- Tailored for: {job.get('title')} at {job.get('company')}
+
+## Education
+- B.Sc. in Electrical / Embedded Engineering
 """
 
             # Mock Motivation Letter
-            letter_content = f"""Dear Hiring Manager,
+            letter_content = f"""Mohamed Almalky
+Mohamed Almalky
+Cairo, Egypt
 
-I am writing to express my interest in the {job.get('title')} position
-at {job.get('company')} in {job.get('location', 'Europe')}.
+Dear Hiring Manager,
 
-With over 5 years of experience in embedded automotive software development,
-including extensive work with AUTOSAR Classic BSW modules, I am confident
-in my ability to contribute effectively to your team.
+I am writing to express my interest in the {job.get('title')} position at {job.get('company')} in {job.get('location', 'Europe')}.
 
-I am particularly drawn to this opportunity because of the alignment with
-my experience in {', '.join(analysis.get('matched_skills', ['AUTOSAR', 'embedded C'])[:3])}.
+With over 5 years of experience in embedded automotive software development, including extensive work with AUTOSAR Classic BSW modules, CAN communication, and UDS diagnostics, I am confident in my ability to contribute effectively to your engineering team.
 
-I am fully prepared to relocate and look forward to the opportunity to
-discuss how my background aligns with your requirements.
+I am particularly drawn to this opportunity at {job.get('company')} because of the alignment with my technical background and experience.
 
-Best regards,
+I am fully prepared to relocate to {job.get('location', 'Europe')} and look forward to discussing how my skills match your requirements.
+
+Sincerely,
 Mohamed Almalky
 """
 
             docs = generate_all_documents(
-                job, analysis, cv_content, letter_content,
+                job=job,
+                analysis=analysis,
+                cv_content=cv_content,
+                letter_content=letter_content,
+                ats_keywords=ats_keywords,
             )
+
+            validation_status = "PASSED" if docs.get("all_valid") else "FAILED"
+            status = "DOCUMENTS_READY" if docs.get("all_valid") else "FAILED"
 
             update_job_documents(
-                conn, job["id"],
-                cv_file=docs.get("cv_docx") or docs.get("cv_txt"),
-                motivation_file=docs.get("motivation_docx") or docs.get("motivation_txt"),
+                conn,
+                job_id=job["id"],
+                cv_file=docs.get("cv_docx"),
+                cv_pdf_file=docs.get("cv_pdf"),
+                motivation_file=docs.get("motivation_docx"),
+                motivation_pdf_file=docs.get("motivation_pdf"),
+                application_answers=docs.get("answers_json"),
+                ats_score=docs.get("cv_ats_score", 0),
+                ats_keywords_found=docs.get("cv_ats_keywords_found", []),
+                ats_keywords_missing=docs.get("cv_ats_keywords_missing", []),
+                pdf_validation_status=validation_status,
+                ats_analysis=ats_keywords,
+                status=status,
             )
-            stats["documents_generated"] += 1
 
-        print(f"[Pipeline] Documents generated: {stats['documents_generated']}")
+            if docs.get("all_valid"):
+                stats["documents_generated"] += 1
+            else:
+                stats["failed"] += 1
+
+        print(f"[Pipeline] Documents generated: {stats['documents_generated']}, Failed: {stats['failed']}")
     finally:
         conn.close()
 

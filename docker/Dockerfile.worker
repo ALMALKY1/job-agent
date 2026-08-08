@@ -1,0 +1,45 @@
+FROM python:3.11-slim
+
+# Prevent Python from writing bytecode and buffer stdout/stderr
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies: LibreOffice, poppler-utils (pdftotext), fonts, curl
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libreoffice \
+    poppler-utils \
+    curl \
+    ca-certificates \
+    fonts-dejavu \
+    fonts-liberation \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY career-profile/ /app/career-profile/
+COPY config/ /app/config/
+COPY prompts/ /app/prompts/
+COPY templates/ /app/templates/
+COPY scripts/ /app/scripts/
+COPY browser-agent/ /app/browser-agent/
+COPY tests/ /app/tests/
+
+# Create persistent storage directories
+RUN mkdir -p /app/data /app/generated/cv /app/generated/motivation /app/generated/applications /app/logs
+
+# Expose API port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=10s --timeout=5s --retries=3 \
+  CMD curl -f http://localhost:8000/health || exit 1
+
+# Start FastAPI server
+CMD ["uvicorn", "scripts.api_server:app", "--host", "0.0.0.0", "--port", "8000"]

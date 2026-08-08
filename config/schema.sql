@@ -51,11 +51,18 @@ CREATE TABLE IF NOT EXISTS jobs (
     visa_sponsorship      TEXT,  -- CONFIRMED, LIKELY, UNKNOWN, UNLIKELY, NO
     relocation_support    TEXT,  -- CONFIRMED, LIKELY, UNKNOWN, NO
 
-    -- Generated documents
+    -- Generated documents & ATS validation
     cv_file               TEXT,
+    cv_pdf_file           TEXT,
     motivation_file       TEXT,
+    motivation_pdf_file   TEXT,
     cover_letter_file     TEXT,
     application_answers   TEXT,
+    ats_score             REAL,
+    ats_keywords_found    TEXT,  -- JSON list
+    ats_keywords_missing  TEXT,  -- JSON list
+    pdf_validation_status TEXT,  -- PASSED, FAILED
+    ats_analysis_json     TEXT,  -- Full ATS analysis JSON
 
     -- Status tracking
     status                TEXT DEFAULT 'NEW',

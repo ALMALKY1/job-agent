@@ -59,18 +59,46 @@ def build_analysis_prompt(job: dict) -> str:
     return render_prompt(template, variables)
 
 
-def build_cv_prompt(job: dict, analysis: dict) -> str:
+def build_ats_analysis_prompt(job: dict) -> str:
+    profile = load_career_profile()
+    template = load_prompt_template("ats_analysis")
+    variables = {
+        "career_profile": profile,
+        "company": job.get("company", ""),
+        "title": job.get("title", ""),
+        "location": job.get("location", ""),
+        "full_description": job.get("full_description", "No description available"),
+        "requirements": job.get("requirements", "Not specified"),
+        "preferred_qualifications": job.get("preferred_qualifications", "Not specified"),
+    }
+    return render_prompt(template, variables)
+
+
+def build_cv_prompt(job: dict, analysis: dict, ats_analysis: dict = None) -> str:
     profile = load_career_profile()
     template = load_prompt_template("cv_generation")
+
+    keywords_req = []
+    keywords_pref = []
+    summary_focus = analysis.get("recommended_cv_focus", [])
+
+    if ats_analysis:
+        keywords_req = ats_analysis.get("ats_keywords_required", [])
+        keywords_pref = ats_analysis.get("ats_keywords_preferred", [])
+        if ats_analysis.get("recommended_summary_focus"):
+            summary_focus = ats_analysis.get("recommended_summary_focus")
+
     variables = {
         "career_profile": profile,
         "company": job.get("company", ""),
         "title": job.get("title", ""),
         "location": job.get("location", ""),
         "full_description": job.get("full_description", ""),
-        "recommended_cv_focus": analysis.get("recommended_cv_focus", []),
-        "recommended_keywords": analysis.get("recommended_keywords", []),
+        "recommended_cv_focus": summary_focus,
+        "recommended_keywords": keywords_req + keywords_pref or analysis.get("recommended_keywords", []),
         "matched_skills": analysis.get("matched_skills", []),
+        "ats_keywords_required": keywords_req,
+        "ats_keywords_preferred": keywords_pref,
     }
     return render_prompt(template, variables)
 

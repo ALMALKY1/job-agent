@@ -10,7 +10,10 @@ This system automatically:
 - Retrieves full job descriptions from official sources
 - Analyzes each job against Mohamed Almalky's career profile
 - Evaluates visa sponsorship and relocation possibilities
-- Generates tailored CVs, Motivation Letters, and application answers
+- Performs ATS requirements analysis using OpenAI
+- Generates ATS-optimized DOCX documents & converts them to final PDF files via headless LibreOffice
+- Validates PDF text readability and keyword matching via `pdftotext` (0–100 ATS score)
+- Automatically cleans up intermediate DOCX build artifacts
 - Tracks every job through the application lifecycle
 - Prepares browser-assisted ATS form filling (stops before submission)
 
@@ -23,27 +26,29 @@ This system automatically:
 ├── data/                  # SQLite database (gitignored)
 ├── docker/                # Docker configurations
 ├── generated/             # Generated application documents (gitignored)
-│   ├── cv/                # Tailored CVs
-│   ├── motivation/        # Motivation Letters
-│   └── applications/      # Application answers
+│   ├── cv/                # Tailored CV PDFs and DOCX builds
+│   ├── motivation/        # Motivation Letter PDFs and DOCX builds
+│   └── applications/      # Application answers JSON
 ├── browser-agent/         # Playwright browser automation
 ├── logs/                  # Daily reports and logs (gitignored)
 ├── n8n/
 │   ├── workflows/         # Exportable n8n workflow JSON
 │   └── CREDENTIAL_SETUP.md
-├── prompts/               # AI prompt templates
+├── prompts/               # AI prompt templates (job_analysis, ats_analysis, etc.)
 ├── scripts/               # Python modules
 │   ├── pipeline.py        # Main orchestrator
 │   ├── email_parser.py    # LinkedIn email parser
 │   ├── db_manager.py      # SQLite database manager
-│   ├── ai_analyzer.py     # AI analysis integration
+│   ├── ai_analyzer.py     # AI analysis & ATS prompt builder
 │   ├── job_retriever.py   # Job description retrieval
-│   ├── doc_generator.py   # Document generation
+│   ├── doc_generator.py   # ATS DOCX generation
+│   ├── pdf_converter.py   # LibreOffice headless PDF converter
+│   ├── ats_validator.py   # PDF pdftotext ATS validator
 │   └── daily_report.py    # Daily summary reports
 ├── templates/             # Document templates
 └── tests/
     ├── fixtures/          # Test email fixtures
-    └── test_all.py        # Test suite (44 tests)
+    └── test_all.py        # Test suite (52 tests)
 ```
 
 ## Quick Start
@@ -54,6 +59,8 @@ This system automatically:
 - Docker Engine (from official Docker APT repo)
 - n8n Community Edition running on `http://localhost:5678`
 - Python 3.10+
+- `libreoffice` (for headless DOCX → PDF conversion)
+- `poppler-utils` (for `pdftotext` ATS text extraction)
 
 ### 2. Setup
 
@@ -61,9 +68,11 @@ This system automatically:
 # Clone/navigate to the project
 cd ~/job-agent
 
+# Run setup script
+./setup-docker-n8n.sh
+
 # Copy environment template
 cp .env.example .env
-# Edit .env with your actual values (OpenAI API key, etc.)
 
 # Initialize the database
 python3 scripts/db_manager.py
@@ -89,33 +98,18 @@ See [n8n/CREDENTIAL_SETUP.md](n8n/CREDENTIAL_SETUP.md) for detailed instructions
 3. Connect credentials to each node
 4. Activate the workflow
 
-### 4. Install Optional Dependencies
+## Document Generation Pipeline
 
-```bash
-# For DOCX document generation
-pip install python-docx
-
-# For browser automation (later phase)
-pip install playwright
-playwright install
 ```
-
-## Pipeline Phases
-
-| Phase | Description | Status |
-|-------|-------------|--------|
-| Email Ingestion | Read Gmail, identify LinkedIn alerts | ✅ Working (needs Gmail OAuth) |
-| Job Extraction | Parse HTML/text emails, extract jobs | ✅ Working |
-| Deduplication | LinkedIn Job ID + fallback key | ✅ Working |
-| Job Description | Retrieve from official/ATS sources | ✅ Framework ready |
-| AI Analysis | Score fit, visa, relocation | ✅ Schema + mock ready (needs OpenAI) |
-| Filtering | Apply/Review/Skip thresholds | ✅ Working |
-| CV Generation | Tailored CV per job | ✅ Framework ready (needs OpenAI) |
-| Motivation Letter | Tailored letter per job | ✅ Framework ready (needs OpenAI) |
-| Application Answers | Q&A with NEEDS_USER_INPUT | ✅ Framework ready (needs OpenAI) |
-| Daily Report | Summary with match details | ✅ Working |
-| Browser Automation | Playwright ATS filling | ✅ Foundation ready |
-| Application Tracker | SQLite with full lifecycle | ✅ Working |
+Job Description
+  → OpenAI ATS Requirements Analysis (ats_analysis.md)
+  → Tailored Content (Strict Anti-Fabrication Rules)
+  → Single-Column ATS-Safe DOCX (python-docx, Calibri 11pt, 1" margins)
+  → LibreOffice Headless PDF Conversion (libreoffice --headless)
+  → PDF ATS Validation (pdftotext extraction, section check, 0-100 ATS score)
+  → Intermediate DOCX Cleanup (unless DEBUG_KEEP_DOCX=true)
+  → Final PDF Application Files (Status: DOCUMENTS_READY)
+```
 
 ## Configuration
 
@@ -123,13 +117,6 @@ playwright install
 - **≥ 80**: SHORTLISTED (apply)
 - **65–79**: REVIEW (manual decision)
 - **< 65**: SKIP
-
-### Immediate Rejection Signals
-- Citizenship requirement incompatible with candidate
-- Mandatory security clearance unavailable
-- Mandatory native language requirement
-- Role unrelated to embedded/software
-- Required experience significantly beyond profile
 
 ### ATS Platforms Detected
 Workday, Greenhouse, Lever, SmartRecruiters, Teamtailor, SuccessFactors, Ashby, Personio
